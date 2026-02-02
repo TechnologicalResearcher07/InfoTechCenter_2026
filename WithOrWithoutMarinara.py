@@ -1,73 +1,70 @@
 #Weather Branch
 
 import requests
+from datetime import datetime, timedelta
 
-def recommend_speed(current_weather: dict) -> int:
-    """
-    Determine a recommended driving speed (mph)
-    based on NWS weather conditions.
-    """
-    base_speed = 65  # normal highway speed
-    desc = (current_weather.get("Condition") or "").lower()
-    temp_c = current_weather.get("Temperature")
-    wind = current_weather.get("Wind Speed") or 0
+# Function to get weather data from the National Weather Service API
+def get_weather_data(latitude, longitude):
+    url = f"https://api.weather.gov/points/{latitude},{longitude}/forecast"
+    response = requests.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        forecast = data['properties']['periods'][0]  # Get the first forecast period
+        return forecast['shortForecast'], forecast['temperature'], forecast['temperatureUnit']
+    else:
+        print("Error fetching weather data.")
+        return None, None, None
 
-    # Weather condition checks
-    if "thunder" in desc:
-        return 25
-    if "snow" in desc or "blizzard" in desc:
-        return 35
-    if "ice" in desc or (temp_c is not None and temp_c <= 0):
-        return 30
-    if "fog" in desc or "mist" in desc:
-        return 40
-    if "heavy rain" in desc or "downpour" in desc:
-        return 45
-    if "rain" in desc:
-        base_speed = 55
+# Function to determine the recommended driving speed
+def get_driving_speed(weather):
+    weather = weather.lower()
+    
+    if "clear" in weather or "sunny" in weather:
+        return 65  # Clear weather, normal speed
+    elif "rain" in weather or "snow" in weather:
+        return 50  # Moderate conditions, slow down
+    elif "fog" in weather or "heavy" in weather:
+        return 35  # Poor visibility or icy roads
+    else:
+        return 65  # Default speed if conditions are not severe
 
-    # Wind adjustment
-    if wind > 40:       # strong crosswinds
-        base_speed -= 15
-    elif wind > 25:
-        base_speed -= 10
+# Function to calculate how many minutes earlier you need to wake up
+def calculate_wake_up_time(current_speed, road_speed=65, drive_time=30):
+    speed_factor = road_speed / current_speed  # Adjust wake-up time based on speed
+    additional_time = int((speed_factor - 1) * drive_time)  # Calculate how much extra time is needed
+    return additional_time
 
-    return max(base_speed, 25)
+# Main program logic
+def weather_alert(latitude, longitude):
+    # Get weather information
+    weather, temperature, temp_unit = get_weather_data(latitude, longitude)
+    
+    if weather:
+        print(f"Current weather: {weather}, Temperature: {temperature} {temp_unit}")
+        
+        # Get the recommended driving speed based on weather
+        driving_speed = get_driving_speed(weather)
+        print(f"Recommended driving speed: {driving_speed} mph")
+        
+        # Calculate how many minutes earlier to wake up
+        wake_up_adjustment = calculate_wake_up_time(driving_speed)
+        print(f"Wake up {wake_up_adjustment} minutes earlier for safer driving conditions.")
+        
+        # Calculate the new alarm time
+        current_alarm_time = datetime.strptime('09:00 AM', '%I:%M %p')
+        new_alarm_time = current_alarm_time - timedelta(minutes=wake_up_adjustment)
+        
+        print(f"Set your alarm to: {new_alarm_time.strftime('%I:%M %p')}")
+        
+        # Send a message (simulating sending a message to your phone)
+        alert_message = f"Weather Alert: Due to {weather}, wake up {wake_up_adjustment} minutes earlier. Set your alarm for {new_alarm_time.strftime('%I:%M %p')}"
+        return alert_message
+    else:
+        return "Error: Could not fetch weather data."
 
+# Example usage (replace latitude and longitude with your location's coordinates)
+latitude = 37.7749  # Example: San Francisco's latitude
+longitude = -122.4194  # Example: San Francisco's longitude
 
-def Weather(lat: float, lon: float) -> dict:
-    headers = {
-        "User-Agent": "MyWeatherApp (email@example.com)"
-    }
-
-    points_url = f"https://api.weather.gov/points/{lat},{lon}"
-    data_points = requests.get(points_url, headers=headers).json()["properties"]
-
-    stations_url = data_points["observationStations"]
-    stations = requests.get(stations_url, headers=headers).json()["features"]
-
-    current_cond = {}
-    if stations:
-        station_id = stations[0]["properties"]["stationIdentifier"]
-        obs_url = f"https://api.weather.gov/stations/{station_id}/observations/latest"
-        obs = requests.get(obs_url, headers=headers).json()["properties"]
-
-        current_cond = {
-            "Temperature": obs["temperature"]["value"],  # Celsius
-            "Condition": obs["textDescription"],
-            "Wind Speed": obs["windSpeed"]["value"] or 0
-        }
-
-    speed = recommend_speed(current_cond)
-
-    return {
-        "current_conditions": current_cond,
-        "recommended_speed_mph": speed
-    }
-
-
-# Example usage
-if __name__ == "__main__":
-    data = Weather(42.48, -85.50)
-    print("Conditions:", data["current_conditions"])
-    print("Recommended driving speed:", data["recommended_speed_mph"], "mph")
+alert_message = weather_alert(latitude, longitude)
+print(alert_message)
