@@ -1,70 +1,76 @@
 #Weather Branch
 
-import requests
+import random
 from datetime import datetime, timedelta
 
-# Function to get weather data from the National Weather Service API
-def get_weather_data(latitude, longitude):
-    url = f"https://api.weather.gov/points/{latitude},{longitude}/forecast"
-    response = requests.get(url)
-    if response.status_code == 200:
-        data = response.json()
-        forecast = data['properties']['periods'][0]  # Get the first forecast period
-        return forecast['shortForecast'], forecast['temperature'], forecast['temperatureUnit']
-    else:
-        print("Error fetching weather data.")
-        return None, None, None
+# Constants for Richland, MI (just for reference)
+LATITUDE = 42.4006
+LONGITUDE = -85.3305
 
-# Function to determine the recommended driving speed
-def get_driving_speed(weather):
-    weather = weather.lower()
+# Step 1: Generate random weather data
+def generate_random_weather():
+    weather_descriptions = [
+        "Clear", "Partly cloudy", "Rain", "Thunderstorms", "Snow", "Fog", "Windy"
+    ]
     
-    if "clear" in weather or "sunny" in weather:
-        return 65  # Clear weather, normal speed
-    elif "rain" in weather or "snow" in weather:
-        return 50  # Moderate conditions, slow down
-    elif "fog" in weather or "heavy" in weather:
-        return 35  # Poor visibility or icy roads
-    else:
-        return 65  # Default speed if conditions are not severe
-
-# Function to calculate how many minutes earlier you need to wake up
-def calculate_wake_up_time(current_speed, road_speed=65, drive_time=30):
-    speed_factor = road_speed / current_speed  # Adjust wake-up time based on speed
-    additional_time = int((speed_factor - 1) * drive_time)  # Calculate how much extra time is needed
-    return additional_time
-
-# Main program logic
-def weather_alert(latitude, longitude):
-    # Get weather information
-    weather, temperature, temp_unit = get_weather_data(latitude, longitude)
+    # Randomly pick a weather description
+    weather_description = random.choice(weather_descriptions)
     
-    if weather:
-        print(f"Current weather: {weather}, Temperature: {temperature} {temp_unit}")
-        
-        # Get the recommended driving speed based on weather
-        driving_speed = get_driving_speed(weather)
-        print(f"Recommended driving speed: {driving_speed} mph")
-        
-        # Calculate how many minutes earlier to wake up
-        wake_up_adjustment = calculate_wake_up_time(driving_speed)
-        print(f"Wake up {wake_up_adjustment} minutes earlier for safer driving conditions.")
-        
-        # Calculate the new alarm time
-        current_alarm_time = datetime.strptime('09:00 AM', '%I:%M %p')
-        new_alarm_time = current_alarm_time - timedelta(minutes=wake_up_adjustment)
-        
-        print(f"Set your alarm to: {new_alarm_time.strftime('%I:%M %p')}")
-        
-        # Send a message (simulating sending a message to your phone)
-        alert_message = f"Weather Alert: Due to {weather}, wake up {wake_up_adjustment} minutes earlier. Set your alarm for {new_alarm_time.strftime('%I:%M %p')}"
-        return alert_message
+    # Random temperature between 10°F and 95°F (for example)
+    temp = random.randint(10, 95)
+    
+    # Random wind speed between 0 mph and 30 mph
+    wind_speed = random.randint(0, 30)
+    
+    print(f"Generated Weather Data: {weather_description}, Temp: {temp}°F, Wind Speed: {wind_speed} mph")
+    
+    return weather_description, temp, wind_speed
+
+# Step 2: Determine Speed Limit Based on Weather
+def get_speed_limit(weather_description, temp, wind_speed):
+    base_speed_limit = 65  # Example base speed limit in good conditions
+    
+    # Adjust speed based on weather conditions
+    if "snow" in weather_description.lower() or temp <= 32:
+        return max(base_speed_limit - 20, 30)  # Slow down in snow or freezing temperatures (min speed 30 mph)
+    elif "rain" in weather_description.lower():
+        return max(base_speed_limit - 15, 40)  # Slow down in rain (min speed 40 mph)
+    elif wind_speed > 25:
+        return max(base_speed_limit - 15, 50)  # Slow down in high winds (min speed 50 mph)
     else:
-        return "Error: Could not fetch weather data."
+        return base_speed_limit  # Normal speed limit for clear weather
 
-# Example usage (replace latitude and longitude with your location's coordinates)
-latitude = 37.7749  # Example: San Francisco's latitude
-longitude = -122.4194  # Example: San Francisco's longitude
+# Step 3: Adjust Wake-Up Time Based on Weather
+def adjust_wake_up_time(weather_description):
+    # Default wake-up time is 6:00 AM
+    wake_up_time = datetime.strptime('06:00', '%H:%M')
 
-alert_message = weather_alert(latitude, longitude)
-print(alert_message)
+    # Add extra time if weather is bad
+    if "snow" in weather_description.lower() or "rain" in weather_description.lower():
+        wake_up_time -= timedelta(minutes=30)  # Add 30 mins if snow or rain is expected
+    elif "fog" in weather_description.lower():
+        wake_up_time -= timedelta(minutes=15)  # Add 15 mins if fog is expected
+
+    return wake_up_time.strftime('%I:%M %p')
+
+# Main function to check everything
+def main():
+    # Step 1: Generate random weather data
+    weather_description, temp, wind_speed = generate_random_weather()
+    
+    # Step 2: Get the recommended speed limit based on the weather
+    speed_limit = get_speed_limit(weather_description, temp, wind_speed)
+    
+    # Step 3: Adjust wake-up time based on the weather
+    wake_up_time = adjust_wake_up_time(weather_description)
+    
+    # Print out the weather data and recommendations
+    print(f"\nWeather Description: {weather_description}")
+    print(f"Temperature: {temp}°F")
+    print(f"Wind Speed: {wind_speed} mph")
+    print(f"Recommended Speed Limit: {speed_limit} mph")
+    print(f"Suggested Wake-up Time: {wake_up_time}")
+
+# Run the main function
+if __name__ == '__main__':
+    main()
