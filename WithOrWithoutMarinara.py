@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #BetaTestDev
 
 #Welcome Branch
@@ -153,7 +152,7 @@ def main():
 # Run the main function
 if __name__ == '__main__':
     main()
-=======
+
 #Gasoline
 
 import random
@@ -264,4 +263,3 @@ if __name__ == "__main__":
 
     # Find the nearest station and check if you can make it
     find_nearest_station_and_check_car(my_car, gas_stations)
->>>>>>> Gasoline
