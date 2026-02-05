@@ -1,8 +1,5 @@
-<<<<<<< HEAD
 #Main Branch
 
-=======
->>>>>>> BetaTestDev
 #BetaTestDev
 
 #Welcome Branch
@@ -158,11 +155,11 @@ def main():
 if __name__ == '__main__':
     main()
 
-<<<<<<< HEAD
+
 #Gasoline Branch
-=======
+
 #Gasoline
->>>>>>> BetaTestDev
+
 
 import random
 
